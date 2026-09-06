@@ -47,9 +47,14 @@ class StockKeepingUnitTest {
     void hashCodeIsStableAcrossCalls() {
         StockKeepingUnit sku = new StockKeepingUnit("SKU-1", "BER-01");
 
-        int firstCall = sku.hashCode();
-        int secondCall = sku.hashCode();
+        assertEquals(sku.hashCode(), sku.hashCode());
+    }
 
-        assertEquals(firstCall, secondCall);
+    @Test
+    void equalInstancesShareAHashCode() {
+        StockKeepingUnit sku = new StockKeepingUnit("SKU-1", "BER-01");
+        StockKeepingUnit sameValues = new StockKeepingUnit("SKU-1", "BER-01");
+
+        assertEquals(sku.hashCode(), sameValues.hashCode());
     }
 }
