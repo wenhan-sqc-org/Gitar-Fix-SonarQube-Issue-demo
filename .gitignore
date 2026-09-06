@@ -1,0 +1,12 @@
+target/
+.scannerwork/
+.sonar/
+
+# Local agent/tool settings
+.claude/
+
+# IDE / OS noise
+.idea/
+*.iml
+.vscode/
+.DS_Store
