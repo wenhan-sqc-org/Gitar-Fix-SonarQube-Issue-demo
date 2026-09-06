@@ -20,7 +20,7 @@ mvn -B verify
 ## What is in here
 
 - `src/` — a tiny `Inventory` class and its tests. Sonar-clean; this is the
-  green baseline on `main`.
+  green baseline on `master`.
 - `demo/` — the scripts, templates and patch that drive the demo. Not part of
   the product code and excluded from analysis.
 - `.github/workflows/ci.yml` — publishes two pull-request checks,

@@ -39,7 +39,7 @@ Branch '$BRANCH' created with one intentional issue.
 
 Next:
   git push --set-upstream origin $BRANCH
-  gh pr create --base main --head $BRANCH \\
+  gh pr create --base master --head $BRANCH \\
     --title "Add StockKeepingUnit value object" \\
     --body "Adds an immutable SKU identifier."
 

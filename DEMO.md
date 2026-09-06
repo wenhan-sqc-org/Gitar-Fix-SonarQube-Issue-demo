@@ -81,22 +81,22 @@ No secrets are hard-coded anywhere. Set these under
 3. **SonarQube Cloud only — turn Automatic Analysis off.** *Project Settings →
    Analysis Method → disable Automatic Analysis*. If it stays on, SonarQube
    rejects the CI analysis and the gate check never gets a result.
-4. Set **New Code** for the project to *Reference branch: `main`*
+4. Set **New Code** for the project to *Reference branch: `master`*
    (*Project Settings → New Code*). Pull requests always scope new code to the
-   PR diff, but this keeps the `main` branch consistent.
-5. Push `main` once so a baseline analysis exists (the `push` trigger in
+   PR diff, but this keeps the `master` branch consistent.
+5. Push `master` once so a baseline analysis exists (the `push` trigger in
    `.github/workflows/ci.yml` does this for you).
 
 ---
 
-## Step 1 — Confirm `main` is green
+## Step 1 — Confirm `master` is green
 
 ```bash
 mvn -B verify
 ```
 
 Expected: `BUILD SUCCESS`, 6 tests, 100% line and branch coverage.
-Push to `main` and confirm both checks pass in the Actions tab.
+Push to `master` and confirm both checks pass in the Actions tab.
 
 ---
 
@@ -109,7 +109,7 @@ it becomes selectable, so do Step 1 first.
 **Option A — Rulesets (current GitHub UI)**
 
 1. **Settings → Rules → Rulesets → New ruleset → New branch ruleset**
-2. **Ruleset Name**: `main protection`  ·  **Enforcement status**: `Active`
+2. **Ruleset Name**: `master protection`  ·  **Enforcement status**: `Active`
 3. **Target branches → Add target → Include default branch**
 4. Tick **Require status checks to pass**
 5. **Add checks** → search for and add:
@@ -121,7 +121,7 @@ it becomes selectable, so do Step 1 first.
 **Option B — Classic branch protection**
 
 1. **Settings → Branches → Add branch protection rule**
-2. **Branch name pattern**: `main`
+2. **Branch name pattern**: `master`
 3. Tick **Require status checks to pass before merging**
 4. In the search box add `SonarQube Quality Gate` and `Build and Test`
 5. **Create**
@@ -141,7 +141,7 @@ it becomes selectable, so do Step 1 first.
 demo/introduce-issue.sh                 # or: demo/introduce-issue.sh my/branch-name
 git push --set-upstream origin demo/missing-hashcode
 
-gh pr create --base main --head demo/missing-hashcode \
+gh pr create --base master --head demo/missing-hashcode \
   --title "Add StockKeepingUnit value object" \
   --body "Adds an immutable SKU identifier used to key stock records."
 ```
@@ -314,7 +314,7 @@ gh pr view --json mergeable,mergeStateStatus,statusCheckRollup
 ```
 
 Expected: `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN` (or `BEHIND` if you
-enabled *Require branches to be up to date* and `main` moved — update the
+enabled *Require branches to be up to date* and `master` moved — update the
 branch and it becomes `CLEAN`).
 
 In the GitHub UI the merge box flips from red *"Required statuses must pass"*
@@ -355,7 +355,7 @@ Gitar's.
 ## Resetting the demo
 
 ```bash
-git switch main
+git switch master
 git branch -D demo/missing-hashcode
 git push origin --delete demo/missing-hashcode
 gh pr close <PR>            # if it is still open
@@ -404,7 +404,7 @@ new. The choices worth knowing about:
 | Sonar job fails with `SONAR_… is not configured` | Set the secret/variables in the table above. Variables live under *Variables*, not *Secrets*. |
 | `You are running CI analysis while Automatic Analysis is enabled` | SonarQube Cloud: disable Automatic Analysis for the project. |
 | Gate is green before the fix | New-code condition missing from a custom gate, or the issue landed on an unchanged line. Check *Pull Requests → your PR → Issues* in SonarQube. |
-| `SonarQube Quality Gate` not listed in branch protection | It has not run yet. Push once to `main` or open a PR, then re-open the setting. |
+| `SonarQube Quality Gate` not listed in branch protection | It has not run yet. Push once to `master` or open a PR, then re-open the setting. |
 | Job hangs then fails at the gate | `sonar.qualitygate.wait` timed out (600 s). The server is slow or unreachable; raise `-Dsonar.qualitygate.timeout`. |
 | Gitar's push does not start a run | The app lacks *Contents: write*, or Actions is restricted for that app. See step 4a. |
 | `git apply` rejects `demo/gitar-fix.patch` | `StockKeepingUnit.java` was edited by hand. Reset the branch and re-run `demo/introduce-issue.sh`. |
@@ -417,7 +417,7 @@ new. The choices worth knowing about:
 .github/workflows/ci.yml                  Build and Test + SonarQube Quality Gate checks
 pom.xml                                   Java 17, JUnit 5, JaCoCo, pinned sonar-maven-plugin
 src/main/java/com/example/demo/
-  Inventory.java                          clean baseline on main
+  Inventory.java                          clean baseline on master
 src/test/java/com/example/demo/
   InventoryTest.java
 demo/

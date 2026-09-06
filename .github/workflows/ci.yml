@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   # 'synchronize' is what makes Gitar's follow-up commit re-run everything:
   # a new push to the PR head branch fires a brand-new analysis.
   pull_request:
