@@ -29,6 +29,7 @@
     <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <!-- demo/ holds templates + patches used by DEMO.md; it is not part of the product code. -->
     <sonar.exclusions>demo/**</sonar.exclusions>
+    <sonar.organization>wenhan-sqc-org</sonar.organization>
   </properties>
 
   <dependencyManagement>
