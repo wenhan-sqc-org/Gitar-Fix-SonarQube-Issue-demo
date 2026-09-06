@@ -25,6 +25,7 @@ class StockKeepingUnitTest {
 
         assertEquals("SKU-1", sku.code());
         assertEquals("BER-01", sku.warehouse());
+        assertEquals("BER-01/SKU-1", sku.lookupKey());
     }
 
     @Test

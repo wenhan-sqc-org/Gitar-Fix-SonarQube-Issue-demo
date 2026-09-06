@@ -14,8 +14,7 @@ Rule: https://rules.sonarsource.com/java/RSPEC-1206
 diff --git a/src/main/java/com/example/demo/StockKeepingUnit.java b/src/main/java/com/example/demo/StockKeepingUnit.java
 --- a/src/main/java/com/example/demo/StockKeepingUnit.java
 +++ b/src/main/java/com/example/demo/StockKeepingUnit.java
-@@ -33,5 +33,10 @@
-         }
+@@ -55,4 +55,9 @@ public final class StockKeepingUnit {
          return Objects.equals(code, that.code)
                  && Objects.equals(warehouse, that.warehouse);
      }
