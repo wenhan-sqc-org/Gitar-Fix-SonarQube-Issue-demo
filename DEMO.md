@@ -59,7 +59,7 @@ change behaviour.
   The Server must be reachable from the GitHub runner (self-hosted runner or a
   public URL).
 - Repository admin rights, to make the check required (step 2).
-- Gitar connected to the repository, **or** use the manual fallback in step 4b.
+- Gitar connected to the repository, **or** apply the manual edit in step 4b.
 
 ### Repository configuration
 
@@ -209,38 +209,20 @@ automatic pass). Gitar pushes one commit to `demo/missing-hashcode`.
 
 ## Step 4b — Manual fallback (simulates Gitar's commit exactly)
 
-Use this when Gitar is not wired up yet. It produces the same one-hunk,
-behaviour-preserving commit:
+Use this when Gitar is not wired up yet. Add `hashCode()` to
+`src/main/java/com/example/demo/StockKeepingUnit.java`, directly after
+`equals()`:
 
-```bash
-demo/apply-gitar-fix.sh
-git push
+```java
+    @Override
+    public int hashCode() {
+        return Objects.hash(code, warehouse);
+    }
 ```
 
-Or apply the patch by hand:
-
 ```bash
-git apply --check demo/gitar-fix.patch   # dry run
-git apply demo/gitar-fix.patch
-git add src/main/java/com/example/demo/StockKeepingUnit.java
-git commit -m "fix(java:S1206): override hashCode() alongside equals()"
+git commit -am "fix(java:S1206): override hashCode() alongside equals()"
 git push
-```
-
-The patch is `demo/gitar-fix.patch`. Its entire effect:
-
-```diff
-@@ -33,5 +33,10 @@
-         }
-         return Objects.equals(code, that.code)
-                 && Objects.equals(warehouse, that.warehouse);
-     }
-+
-+    @Override
-+    public int hashCode() {
-+        return Objects.hash(code, warehouse);
-+    }
- }
 ```
 
 ### Verify the fix is small and reviewable (acceptance criterion 2)
@@ -407,24 +389,3 @@ new. The choices worth knowing about:
 | `SonarQube Quality Gate` not listed in branch protection | It has not run yet. Push once to `master` or open a PR, then re-open the setting. |
 | Job hangs then fails at the gate | `sonar.qualitygate.wait` timed out (600 s). The server is slow or unreachable; raise `-Dsonar.qualitygate.timeout`. |
 | Gitar's push does not start a run | The app lacks *Contents: write*, or Actions is restricted for that app. See step 4a. |
-| `git apply` rejects `demo/gitar-fix.patch` | `StockKeepingUnit.java` was edited by hand. Reset the branch and re-run `demo/introduce-issue.sh`. |
-
----
-
-## Layout
-
-```
-.github/workflows/ci.yml                  Build and Test + SonarQube Quality Gate checks
-pom.xml                                   Java 17, JUnit 5, JaCoCo, pinned sonar-maven-plugin
-src/main/java/com/example/demo/
-  Inventory.java                          clean baseline on master
-src/test/java/com/example/demo/
-  InventoryTest.java
-demo/
-  templates/StockKeepingUnit.java         the flawed class (copied into src/ by step 3)
-  templates/StockKeepingUnitTest.java     its tests — green before and after the fix
-  introduce-issue.sh                      step 3: create the failing branch + commit
-  gitar-fix.patch                         step 4b: the exact fix, +5 lines
-  apply-gitar-fix.sh                      step 4b: apply the patch and commit as Gitar would
-DEMO.md                                   this file
-```
