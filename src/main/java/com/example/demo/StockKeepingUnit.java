@@ -55,4 +55,9 @@ public final class StockKeepingUnit {
         return Objects.equals(code, that.code)
                 && Objects.equals(warehouse, that.warehouse);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(code, warehouse);
+    }
 }
