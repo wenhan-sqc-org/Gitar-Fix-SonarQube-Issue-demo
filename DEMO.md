@@ -117,17 +117,18 @@ If `mergeStateStatus` is `BEHIND`, run `gh pr update-branch` first.
 ### Step 5 — Reset for the next run
 
 Merging puts the demo class on `master`, so `introduce-issue.sh` will refuse to
-run again until it is removed.
+run again until it is removed. `reset-demo.sh` is the opposite of
+`introduce-issue.sh` and undoes exactly that:
 
 ```bash
-# if the pull request was merged, revert it on master
-git switch master && git pull
-git revert --mainline 1 <merge-commit-sha>    # or: git revert <squash-commit-sha>
-git push
-
-# clean up the local branch
-git branch -D demo/missing-hashcode
+demo/reset-demo.sh
 ```
 
-To keep `master` untouched instead, close the pull request without merging and
-delete its branch — the demo is repeatable that way with no revert.
+It fast-forwards `master`, removes the two demo files on a `chore/reset-demo`
+branch, deletes the leftover local `demo/missing-hashcode` branch, and prints
+the push / pull request / merge commands. `master` is protected, so it does not
+push by itself.
+
+If the pull request was closed without merging, the script reports that
+`master` is already clean and only cleans up the branch — nothing to push, and
+the demo is immediately repeatable.
