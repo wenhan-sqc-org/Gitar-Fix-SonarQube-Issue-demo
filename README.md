@@ -3,7 +3,7 @@
 A minimal, deterministic Java project used to demonstrate one loop:
 
 > a pull request introduces one code-quality issue → the required
-> **`SonarQube Quality Gate`** check fails → **Gitar** pushes a small
+> **`SonarCloud Code Analysis`** check fails → **Gitar** pushes a small
 > behaviour-preserving fix → a **fresh** SonarQube pull request analysis runs →
 > the gate passes → the pull request becomes mergeable.
 
@@ -23,8 +23,10 @@ mvn -B verify
   green baseline on `master`.
 - `demo/` — the scripts, templates and patch that drive the demo. Not part of
   the product code and excluded from analysis.
-- `.github/workflows/ci.yml` — publishes two pull-request checks,
-  `Build and Test` and `SonarQube Quality Gate`.
+- `.github/workflows/ci.yml` — builds, tests and runs SonarQube analysis on
+  every pull request. The quality gate result is published separately by
+  SonarQube Cloud's GitHub App as `SonarCloud Code Analysis`, which is the
+  check to mark as required.
 
 ## Configuration
 

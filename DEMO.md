@@ -3,7 +3,7 @@
 This repository demonstrates the following loop end to end:
 
 1. A pull request introduces **one** intentional code-quality issue.
-2. The required `SonarQube Quality Gate` check fails → GitHub refuses to merge.
+2. The required `SonarCloud Code Analysis` check fails → GitHub refuses to merge.
 3. **Gitar** pushes a small follow-up commit that fixes exactly that issue.
 4. The new commit triggers a **fresh** SonarQube pull request analysis.
 5. The gate turns green → the pull request becomes mergeable.
@@ -29,9 +29,16 @@ change behaviour.
 - **Deterministic detection.** S1206 is decided purely from the class structure
   ("overrides `equals` but not `hashCode`"). There is no dataflow engine
   involved, so it fires on every analysis — no flaky demos.
-- **It fails the built-in `Sonar way` gate on its own.** One new Blocker Bug
-  trips *New Reliability Rating worse than A* (Standard Experience) and
-  *new Blocker/High issues > 0* (MQR mode). No custom gate needed.
+- **It fails a new-code gate on its own.** Under the built-in `Sonar way` one
+  new Blocker Bug trips *New Reliability Rating worse than A* (Standard
+  Experience) or *new Blocker/High issues > 0* (MQR mode). A custom gate whose
+  only condition is `new_violations > 0` fails on it too. Confirm which gate
+  your project uses before demoing — the demo needs a condition that a single
+  new issue trips:
+
+  ```bash
+  sonar api GET "/api/qualitygates/project_status?projectKey=<KEY>&pullRequest=<PR>"
+  ```
 - **SonarQube never rewrites it.** SonarQube analysis is read-only in CI; the
   repository contains no SonarQube autofix/agent hook that would modify the
   source. The fix must come from Gitar (or the documented fallback).
@@ -140,22 +147,39 @@ it becomes selectable, so do Step 1 first.
 2. **Ruleset Name**: `master protection`  ·  **Enforcement status**: `Active`
 3. **Target branches → Add target → Include default branch**
 4. Tick **Require status checks to pass**
-5. **Add checks** → search for and add:
-   - `SonarQube Quality Gate`
-   - `Build and Test`
-6. (Recommended) tick **Require branches to be up to date before merging**
-7. **Create**
+5. **Add checks** → search for and add **`SonarCloud Code Analysis`**, and pick
+   the entry provided by the **SonarQubeCloud** app (not GitHub Actions)
+6. (Recommended) add your build job's check too, e.g. `Build and analyze`
+7. (Recommended) tick **Require branches to be up to date before merging**
+8. **Create**
 
 **Option B — Classic branch protection**
 
 1. **Settings → Branches → Add branch protection rule**
 2. **Branch name pattern**: `master`
 3. Tick **Require status checks to pass before merging**
-4. In the search box add `SonarQube Quality Gate` and `Build and Test`
+4. In the search box add `SonarCloud Code Analysis`
 5. **Create**
 
-> The check name is the workflow **job name**. `SonarQube Quality Gate` is
-> produced by the `sonarqube` job in `.github/workflows/ci.yml`.
+> **Pick the right check, and the right provider.** `SonarCloud Code Analysis`
+> is published by SonarQube Cloud's own GitHub App and *already carries the
+> quality gate result* — it goes red when the gate fails and green when it
+> passes. Requiring it means CI does not need to evaluate the gate at all: no
+> `sonar.qualitygate.wait`, no job named after the gate.
+>
+> Do **not** invent a check name such as `SonarQube Quality Gate` unless a
+> workflow job actually produces it. GitHub records a required check as a
+> name *plus a provider*, so requiring that name from **GitHub Actions** when
+> no job is named that leaves the branch permanently unmergeable, with
+> `Required status check "…" is expected.` on every push and pull request —
+> including pull requests that would fix the problem.
+>
+> Verify what a commit really published before requiring it:
+>
+> ```bash
+> gh api repos/{owner}/{repo}/commits/<sha>/check-runs \
+>   --jq '.check_runs[] | "\(.name) | \(.conclusion) | app=\(.app.name)"'
+> ```
 
 > On the GitHub Free plan, branch protection and rulesets require the
 > repository to be **public**. For a private demo repo you need Team or
@@ -191,13 +215,16 @@ Expected:
 
 | Check | Result |
 |---|---|
-| `Build and Test` | ✅ pass — 6 tests green, behaviour is fine |
-| `SonarQube Quality Gate` | ❌ **fail** — 1 new Blocker issue |
+| `Build and analyze` (GitHub Actions) | ✅ pass — tests green, behaviour is fine |
+| `SonarCloud Code Analysis` (SonarQubeCloud app) | ❌ **fail** — quality gate red, 1 new issue |
 
 `mergeStateStatus` is **`BLOCKED`**, and the GitHub merge box reads
 *"Required statuses must pass before merging"*. The **Merge** button is
-disabled. The Sonar job log ends with
-`QUALITY GATE STATUS: FAILED - View details on <your Sonar URL>`.
+disabled.
+
+The build job itself still succeeds — it analyses but does not evaluate the
+gate. The red signal comes from the Sonar app's check, which is the whole point:
+the pull request is blocked by code quality, not by a broken build.
 
 Confirm SonarQube agrees:
 
@@ -302,8 +329,8 @@ gh api "repos/{owner}/{repo}/commits/$FIX_SHA/check-runs" \
 Expected:
 
 ```
-Build and Test: completed/success head=<first 7 of FIX_SHA>
-SonarQube Quality Gate: completed/success head=<first 7 of FIX_SHA>
+Build and analyze | success | app=GitHub Actions
+SonarCloud Code Analysis | success | app=SonarQubeCloud
 ```
 
 Confirm on the SonarQube side that the analysis is new and points at the fix
@@ -432,7 +459,8 @@ new. The choices worth knowing about:
 | Sonar job fails with `SONAR_… is not configured` | Set the secret/variables in the table above. Variables live under *Variables*, not *Secrets*. |
 | `You are running CI analysis while Automatic Analysis is enabled` | SonarQube Cloud: disable Automatic Analysis for the project. |
 | Gate is green before the fix | New-code condition missing from a custom gate, or the issue landed on an unchanged line. Check *Pull Requests → your PR → Issues* in SonarQube. |
-| `SonarQube Quality Gate` not listed in branch protection | It has not run yet. Push once to `master` or open a PR, then re-open the setting. |
+| Required check never reports; every push rejected with `Required status check "…" is expected.` | The ruleset requires a name/provider pair nothing publishes. List a commit's real checks (see step 2) and require one of those instead. |
+| `SonarCloud Code Analysis` not listed in branch protection | It has not run yet. Open a pull request once so the Sonar app posts it, then re-open the setting. |
 | Job hangs then fails at the gate | `sonar.qualitygate.wait` timed out (600 s). The server is slow or unreachable; raise `-Dsonar.qualitygate.timeout`. |
 | Gitar's push does not start a run | The app lacks *Contents: write*, or Actions is restricted for that app. See step 4a. |
 | `git apply` rejects `demo/gitar-fix.patch` | `StockKeepingUnit.java` was edited by hand. Reset the branch and re-run `demo/introduce-issue.sh`. If you changed the template on purpose, regenerate the patch — see below. |
@@ -460,7 +488,7 @@ explanatory header at the top of the patch file, then confirm with
 ## Layout
 
 ```
-.github/workflows/ci.yml                  Build and Test + SonarQube Quality Gate checks
+.github/workflows/ci.yml                  builds, tests and runs Sonar analysis
 pom.xml                                   Java 17, JUnit 5, JaCoCo, pinned sonar-maven-plugin
 src/main/java/com/example/demo/
   Inventory.java                          clean baseline on master
