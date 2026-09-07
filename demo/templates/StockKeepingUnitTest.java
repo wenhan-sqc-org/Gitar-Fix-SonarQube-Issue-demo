@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * <p>Note the hashCode test only asserts stability across calls on one instance
  * — true with the inherited identity hash as well. Asserting that two *equal*
  * instances share a hash would fail before the fix and would make the pre-fix
- * failure ambiguous. See DEMO.md for the optional post-fix strengthening.
+ * failure ambiguous.
  */
 class StockKeepingUnitTest {
 
