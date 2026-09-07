@@ -14,6 +14,8 @@ mvn -B verify     # BUILD SUCCESS
 - `src/` — the demo code.
 - `demo/templates/` — the flawed class and tests copied in by the demo script.
 - `demo/introduce-issue.sh` — creates the branch and commit that opens the demo.
+- `demo/reset-demo.sh` — the opposite: undoes a merged demo run so it can be
+  run again.
 - `.github/workflows/ci.yml` — builds, tests and runs SonarQube analysis on
   every pull request. The gate result is published separately by SonarQube
   Cloud's GitHub App as `SonarCloud Code Analysis`, which is the required check.
