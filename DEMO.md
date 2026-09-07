@@ -43,6 +43,34 @@ change behaviour.
   would sit on an unchanged line and would *not* count as new code — the
   pull-request gate would stay green and the demo would not work.
 
+### Why `StockKeepingUnit` is a class and not a record
+
+A two-field immutable value type with accessors and `equals` is exactly what
+[`java:S6206`](https://rules.sonarsource.com/java/RSPEC-6206) tells you to turn
+into `record StockKeepingUnit(String code, String warehouse)` — and SonarQube
+raises it on the class declaration.
+
+That must not happen here, for two reasons:
+
+1. A record **generates `hashCode()` automatically**, so the java:S1206 issue
+   this demo depends on cannot exist in a record at all.
+2. Record conversion would therefore let a fixer resolve S1206 as a *side
+   effect* of an unrelated maintainability suggestion — the demo would appear to
+   pass without ever demonstrating the intended fix.
+
+It also breaks the "exactly one intentional issue" property: the pull request
+would carry S1206 **and** S6206.
+
+The fix is not to suppress S6206 but to give the type a real reason not to be a
+record. A record may not declare instance fields beyond its components
+(JLS 8.10.1), so the cached `lookupKey` field makes the rule inapplicable as a
+matter of language semantics rather than configuration — the same
+"deterministic, not best-effort" standard used to pick S1206 itself.
+
+Do **not** remove that field, and do not add a `// NOSONAR` comment or
+`@SuppressWarnings` instead: a suppression would hide the rule rather than make
+it untrue, and on a demo screen it reads as cheating.
+
 ---
 
 ## Prerequisites
@@ -407,7 +435,25 @@ new. The choices worth knowing about:
 | `SonarQube Quality Gate` not listed in branch protection | It has not run yet. Push once to `master` or open a PR, then re-open the setting. |
 | Job hangs then fails at the gate | `sonar.qualitygate.wait` timed out (600 s). The server is slow or unreachable; raise `-Dsonar.qualitygate.timeout`. |
 | Gitar's push does not start a run | The app lacks *Contents: write*, or Actions is restricted for that app. See step 4a. |
-| `git apply` rejects `demo/gitar-fix.patch` | `StockKeepingUnit.java` was edited by hand. Reset the branch and re-run `demo/introduce-issue.sh`. |
+| `git apply` rejects `demo/gitar-fix.patch` | `StockKeepingUnit.java` was edited by hand. Reset the branch and re-run `demo/introduce-issue.sh`. If you changed the template on purpose, regenerate the patch — see below. |
+| A second issue appears: *"Refactor this class declaration to use record…"* (java:S6206) | The `lookupKey` field was removed from `StockKeepingUnit`, making the class record-eligible again. Restore it — see [Why `StockKeepingUnit` is a class and not a record](#why-stockkeepingunit-is-a-class-and-not-a-record). |
+
+### Regenerating `demo/gitar-fix.patch`
+
+If you edit `demo/templates/StockKeepingUnit.java`, the patch's line numbers go
+stale. Regenerate it mechanically instead of hand-editing:
+
+```bash
+D=src/main/java/com/example/demo
+rm -rf /tmp/p && mkdir -p "/tmp/p/a/$D" "/tmp/p/b/$D"
+cp demo/templates/StockKeepingUnit.java "/tmp/p/a/$D/StockKeepingUnit.java"
+cp "$D/StockKeepingUnit.java"           "/tmp/p/b/$D/StockKeepingUnit.java"   # the fixed version
+(cd /tmp/p && git diff --no-index "a/$D/StockKeepingUnit.java" "b/$D/StockKeepingUnit.java")
+```
+
+Strip the doubled `a/a/` `b/b/` path prefixes from the output, keep the
+explanatory header at the top of the patch file, then confirm with
+`git apply --check demo/gitar-fix.patch`.
 
 ---
 
